@@ -49,21 +49,14 @@ def load_jsonl(path: str) -> Dataset:
         data = [json.loads(line) for line in f]
     return Dataset.from_list(data)
     
-def tokenize_the_data(examples, tokenizer):
+def tokenize_the_data(examples, tokenizer, max_length=512) -> Dict[str, List[int]]:
     texts = [p + o for p, o in zip(examples["prompt"], examples["output"])]
     model_inputs = tokenizer(
         texts,
         truncation=True,
         padding="max_length",
-        max_length=512
+        max_length=max_length,
     )
     model_inputs["labels"] = model_inputs["input_ids"].copy()
     return model_inputs
 
-
-# ✅ Usage example
-if __name__ == "__main__":
-    convert_dataset_and_save_as_file(
-        input_path="train.json",
-        output_path="train.jsonl"
-    )
