@@ -81,7 +81,7 @@ def generate_response(model, tokenizer, prompt, max_new_tokens=512):
 
 # ✅ Main pipeline
 
-def train(model_name: str = "huggyllama/llama-7b", dataset_path: str = "train.jsonl", auth_token: str = None, num_epochs: int = 30):
+def train(model_name: str = "huggyllama/llama-7b", dataset_path: str = None, dataset = None, auth_token: str = None, num_epochs: int = 30):
     # Load + prepare
     tokenizer = load_tokenizer(model_name, auth_token)
     quant_config = create_quant_config()
@@ -91,8 +91,19 @@ def train(model_name: str = "huggyllama/llama-7b", dataset_path: str = "train.js
     model.print_trainable_parameters()
 
     # Prepare dataset
-    dataset = load_jsonl(dataset_path)
-    dataset = dataset.map(lambda x: tokenize_the_data(examples = x, tokenizer = tokenizer, max_length= 512), batched=True)
+    if dataset is None:
+        if dataset_path is None:
+            raise ValueError("Either dataset or dataset_path must be provided.")
+        dataset = load_jsonl(dataset_path)
+    else:
+        if dataset_path is not None:
+            raise ValueError("Either dataset or dataset_path must be provided.")
+        # if json file is not in jsonl format, convert it to jsonl format
+        if not dataset_path.endswith(".jsonl"):
+            convert_dataset_and_save_as_file(dataset, dataset_path)
+            dataset_path = dataset_path
+        dataset = load_jsonl(dataset_path)
+        dataset = dataset.map(lambda x: tokenize_the_data(examples = x, tokenizer = tokenizer, max_length= 512), batched=True)
 
     # Train
     trainer = Trainer(
