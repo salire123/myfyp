@@ -5,3 +5,4 @@ qlora-llama7b/checkpoint-*
 **/__pycache__
 
 .env
+fun
