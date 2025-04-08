@@ -1,15 +1,14 @@
 import torch
 import os
-from dotenv import load_dotenv
 from transformers import (
     AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig,
     Trainer, TrainingArguments
 )
 from peft import prepare_model_for_kbit_training, get_peft_model, LoraConfig
-from utils import load_jsonl, convert_dataset_and_save_as_file, tokenize_the_data
+from .traing_dataset import load_jsonl, convert_dataset_and_save_as_file, tokenize_the_data
 
 # ✅ Load environment variables
-load_dotenv()
+
 auth_token = os.getenv("hf_auth_token")
 model_name = "huggyllama/llama-7b"
 
@@ -48,12 +47,12 @@ def apply_lora(model):
     model = get_peft_model(model, config)
     return model
 
-def create_training_args(output_dir="./qlora-llama7b"):
+def create_training_args(output_dir="./qlora-llama7b", num_train_epochs=30):
     return TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=2,
         gradient_accumulation_steps=4,
-        num_train_epochs=30,
+        num_train_epochs=num_train_epochs,
         learning_rate=2e-4,
         fp16=True,
         logging_dir="./logs",
@@ -82,7 +81,7 @@ def generate_response(model, tokenizer, prompt, max_new_tokens=512):
 
 # ✅ Main pipeline
 
-def train(model_name: str = "huggyllama/llama-7b", dataset_path: str = "train.jsonl"):
+def train(model_name: str = "huggyllama/llama-7b", dataset_path: str = "train.jsonl", auth_token: str = None, num_epochs: int = 30):
     # Load + prepare
     tokenizer = load_tokenizer(model_name, auth_token)
     quant_config = create_quant_config()
@@ -93,7 +92,7 @@ def train(model_name: str = "huggyllama/llama-7b", dataset_path: str = "train.js
 
     # Prepare dataset
     dataset = load_jsonl(dataset_path)
-    dataset = dataset.map(lambda x: tokenize_the_data(x, tokenizer), batched=True)
+    dataset = dataset.map(lambda x: tokenize_the_data(examples = x, tokenizer = tokenizer, max_length= 512), batched=True)
 
     # Train
     trainer = Trainer(
@@ -118,6 +117,3 @@ def train(model_name: str = "huggyllama/llama-7b", dataset_path: str = "train.js
     print("\n🧪 ChatAGI's response:\n")
     print(result)
 
-
-if __name__ == "__main__":
-    train()

@@ -1,5 +1,7 @@
 .venv
 
 qlora-llama7b/checkpoint-*
+**/pycache
+**/__pycache__
 
 .env
